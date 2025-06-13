@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guess The Number</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        input[type="number"], select {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 10px;
+            border: none;
+            margin: 10px 0;
+            width: 80%;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #ff6f61;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #e94e3f;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px #000;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🎯 Guess The Number 🎯</h1>
+<h2>"Play. Learn. Win."</h2>
+
+<div class="container">
+    <label for="level">Choose Difficulty:</label><br>
+    <select id="level">
+        <option value="">--Select--</option>
+        <option value="easy">Easy (10 tries)</option>
+        <option value="hard">Hard (5 tries)</option>
+    </select><br>
+
+    <button onclick="startGame()">Start Game</button>
+
+    <div id="game" style="display:none;">
+        <p>Enter your guess (1-100):</p>
+        <input type="number" id="guess" min="1" max="100">
+        <button onclick="checkGuess()">Submit Guess</button>
+
+        <div id="message"></div>
+    </div>
+</div>
+
+<script>
+    let remaining = 0;
+
+    async function startGame() {
+        const level = document.getElementById("level").value;
+        if (!level) {
+            alert("Please select difficulty!");
+            return;
+        }
+
+        const res = await fetch('/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ level: level })
+        });
+
+        const data = await res.json();
+        remaining = data.remaining;
+        document.getElementById("game").style.display = "block";
+        document.getElementById("message").innerText = `Game started! You have ${remaining} chances.`;
+    }
+
+    async function checkGuess() {
+        const guessInput = document.getElementById("guess");
+        const guess = parseInt(guessInput.value);
+        
+        if (!guess || guess < 1 || guess > 100) {
+            alert("Enter valid number (1-100)");
+            return;
+        }
+
+        // Clear input after submit
+        guessInput.value = '';
+
+        const res = await fetch('/guess', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guess: guess })
+        });
+
+        const data = await res.json();
+
+        if (data.result === 'win') {
+            document.getElementById("message").innerText = "🎉 Hurray! You guessed the correct number!";
+            document.getElementById("game").style.display = "none";
+        } else if (data.result === 'low') {
+            document.getElementById("message").innerText = `Too Low! ${data.remaining} chances left.`;
+        } else if (data.result === 'high') {
+            document.getElementById("message").innerText = `Too High! ${data.remaining} chances left.`;
+        } else if (data.result === 'lose') {
+            document.getElementById("message").innerText = `😢 You lose! The number was ${data.number}.`;
+            document.getElementById("game").style.display = "none";
+        }
+    }
+</script>
+
+</body>
+</html>
